@@ -456,6 +456,26 @@ check_single_file()
          return 1
        fi
        ;;
+     SQLite\ 3)
+       # if the build produced sqlite files then sqlite is probably installed,
+       if [[ $(type -p sqlite3) ]]; then
+         echo ".dump" | sqlite3 old/$file > $file1
+         echo ".dump" | sqlite3 new/$file > $file2
+         if ! test -s $file1 -a -s $file2; then
+            # one or both dumps failed; compare the binaries
+            if ! diff_two_files; then
+               return 1
+            fi
+         elif ! diff -u $file1 $file2 > $dfile; then
+            echo "$file differs in SQL dump ($ftype)"
+            head -n 200 $dfile
+            return 1
+         fi
+       # if sqlite was not installed, fall back on binary compare
+       elif ! diff_two_files; then
+           return 1
+       fi
+       ;;
      *directory)
        # tar might package directories - ignore them here
        return 0
